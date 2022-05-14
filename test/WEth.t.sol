@@ -7,6 +7,8 @@ import "src/WEth.sol";
 
 interface IWEth {
     function deposit() external payable;
+
+    function withdraw(uint256) external;
 }
 
 contract MockHacker {
@@ -18,6 +20,10 @@ contract MockHacker {
 
     function deposit() external {
         IWEth(wethAddress).deposit{value: 1 ether}();
+    }
+
+    function withdraw(uint256 _val) external {
+        IWEth(wethAddress).withdraw(_val);
     }
 
     receive() external payable {}
@@ -103,5 +109,10 @@ contract WEthTest is Test {
         );
         console.log("weth after balance is ", address(weth).balance / 10**18);
         require(address(weth).balance == 1 ether);
+        _mock.withdraw(1 ether);
+        console.log(
+            "mock contract after eth is ",
+            address(_mock).balance / 10**18
+        );
     }
 }
