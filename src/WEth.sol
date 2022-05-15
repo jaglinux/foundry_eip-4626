@@ -23,6 +23,7 @@ contract WEth is ERC20 {
     {
         _burn(msg.sender, _val);
         (result, log) = payable(msg.sender).call{value: _val}("");
+        require(result, string(log));
         emit withdrawLog("Withdraw by ", msg.sender, _val);
     }
 

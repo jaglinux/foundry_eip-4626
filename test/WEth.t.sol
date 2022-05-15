@@ -9,6 +9,8 @@ interface IWEth {
     function deposit() external payable;
 
     function withdraw(uint256) external;
+
+    function balanceOf(address) external;
 }
 
 contract MockHacker {
@@ -18,15 +20,19 @@ contract MockHacker {
         wethAddress = _addr;
     }
 
-    function deposit() external {
-        IWEth(wethAddress).deposit{value: 1 ether}();
+    function deposit(uint256 _val) external {
+        IWEth(wethAddress).deposit{value: _val}();
     }
 
     function withdraw(uint256 _val) external {
         IWEth(wethAddress).withdraw(_val);
     }
 
-    receive() external payable {}
+    fallback() external payable {
+        if (wethAddress.balance > 0) {
+            IWEth(wethAddress).withdraw(wethAddress.balance);
+        }
+    }
 }
 
 contract WEthTest is Test {
@@ -70,6 +76,7 @@ contract WEthTest is Test {
         );
         console.log(result);
         console.logBytes(data);
+        require(result, string(data));
         console.log("weth eth balance is ", address(weth).balance / 10**18);
         console.log("user1 eth balance is ", user1.balance / 10**18);
         console.log(
@@ -94,7 +101,7 @@ contract WEthTest is Test {
         require(user1.balance == 100 ether);
     }
 
-    function testWithdrawHack() public {
+    function testFailWithdrawHack() public {
         MockHacker _mock = new MockHacker(address(weth));
         _Vm.deal(address(_mock), 100 ether);
         console.log(
@@ -102,13 +109,15 @@ contract WEthTest is Test {
             address(_mock).balance / 10**18
         );
         console.log("weth before balance is ", address(weth).balance / 10**18);
-        _mock.deposit();
+        _mock.deposit(1 ether);
         console.log(
             "mock contract after eth is ",
             address(_mock).balance / 10**18
         );
+        _Vm.prank(user1);
+        weth.deposit{value: 1 ether}();
         console.log("weth after balance is ", address(weth).balance / 10**18);
-        require(address(weth).balance == 1 ether);
+        require(address(weth).balance == 2 ether);
         _mock.withdraw(1 ether);
         console.log(
             "mock contract after eth is ",
