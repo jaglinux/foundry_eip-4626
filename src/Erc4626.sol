@@ -43,10 +43,30 @@ contract Vault is ERC20 {
         public
         returns (uint256 shares)
     {
-        //approve this contract for transferFrom
+        //approve this contract for transferFrom()
         asset.transferFrom(msg.sender, address(this), _assets);
         shares = convertToShares(_assets);
         _mint(receiver, shares);
         emit Deposit("Deposited ", msg.sender, _assets);
+    }
+
+    function redeem(
+        uint256 _shares,
+        address _receiver,
+        address _owner
+    ) external returns (uint256 assets) {
+        if (msg.sender != _owner) {
+            require(
+                allowance[_owner][msg.sender] >= _shares,
+                "not enough allowance"
+            );
+        }
+        require(balanceOf[_owner] >= _shares, "not enough shares");
+        if (msg.sender != _owner) {
+            allowance[_owner][msg.sender] -= _shares;
+        }
+        _burn(_owner, _shares);
+        assets = convertToAssets(_shares);
+        transfer(_receiver, assets);
     }
 }
